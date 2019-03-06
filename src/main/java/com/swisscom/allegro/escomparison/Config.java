@@ -1,6 +1,6 @@
 package com.swisscom.allegro.escomparison;
 
-public class Config {
+class Config {
 
     private Config() {}
 
@@ -15,7 +15,7 @@ public class Config {
     static final String OLD_INDEX_NAME = "index_al_doc01";
     static final String NEW_INDEX_NAME = "index_new_al_doc01";
 
-    static final String OLD_IAAS_INDEX_NAME = "index_new_pbtaifun";
+    static final String OLD_IAAS_INDEX_NAME = "index_pbtaifun";
 
     static final String IMPORT_TYPE_SOI = "service_order_item";
     static final String IMPORT_TYPE_CUSTOMER = "customer";

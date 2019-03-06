@@ -28,6 +28,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.swisscom.allegro.escomparison.Config.*;
@@ -102,35 +103,32 @@ public class Application {
             SearchResponse scrollResp = client.prepareSearch(indexName)
                     .setQuery(QueryBuilders.termQuery("_type", type))
                     .addSort(sortBy, SortOrder.ASC)
-//                    .setQuery(QueryBuilders.termQuery(sortBy, ))
-                    .setScroll(new TimeValue(60000))
+//                    .setQuery(QueryBuilders.termQuery(sortBy, 2056))
+                    .setScroll(new TimeValue(5, TimeUnit.MINUTES))
                     .setSize(100)
                     .execute()
                     .actionGet();
 
             long index = 0;
 
-            while (true) {
-
-                for (SearchHit hit : scrollResp.getHits()) {
+            do {
+                for (SearchHit hit : scrollResp.getHits().getHits()) {
                     index++;
-                    importers.add(new Gson().fromJson(hit.getSourceAsString(), Importers.class));
-                    s.add(hit.getSourceAsString());
-                    log.info("Importing item no: {}, id: {}", i++, importers.get(importers.size() - 1).getItemNo());
-
-                    getSoiFromLocalEnv(indexNewItems, "http://localhost:8090/inventory/import/CustomerOrderItem/", importers.get(importers.size() - 1).getItemNo());
-
-//                    perfromSearchAndCompareHit(hit);
 
                     if (index == maxValues)
                         break;
+
+                    importers.add(new Gson().fromJson(hit.getSourceAsString(), Importers.class));
+                    s.add(hit.getSourceAsString());
+                    log.info("Importing item no: {}, id: {}", i++, importers.get(importers.size() - 1).getItemNo());
+                    getSoiFromLocalEnv(indexNewItems, "http://localhost:8090/inventory/import/CustomerOrderItem/", importers.get(importers.size() - 1).getItemNo());
                 }
 
-                scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
+                scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(5, TimeUnit.MINUTES)).execute().actionGet();
+            } while(index < maxValues && scrollResp.getHits().getHits().length != 0);
 
-                if (scrollResp.getHits().getHits().length == 0 || index == maxValues)
-                    break;
-            }
+            client.close();
+
         } else log.error("Cannot import, client is null!");
     }
 
@@ -278,7 +276,7 @@ public class Application {
 
     private static void importAndCompareSOIs() {//
 //        importIndex(indexOrigItems, OLD_IAAS_INDEX_NAME, SOI_SORT_BY, IMPORT_TYPE_SOI);
-        importIndex(indexOrigItems, OLD_IAAS_INDEX_NAME, INVENTORY_SORT_BY, IMPORT_TYPE_INVENTORY, 100L);
+        importIndex(indexOrigItems, OLD_IAAS_INDEX_NAME, INVENTORY_SORT_BY, IMPORT_TYPE_INVENTORY, 10L);
 //        importIndex(indexNewItems, "index_new_pbtaifun", SOI_SORT_BY, IMPORT_TYPE_SOI, 100L);
     }
 
@@ -292,16 +290,8 @@ public class Application {
 
             if (itemsLeft.isEmpty() && differences.isEmpty())
                 Application.log.debug("The indexes are a match! Old: {} New: {}", indexOrigItems.size(), indexNewItems.size());
-            else {
+            else
                 Application.log.error("You have differences between the two indexes. {} changes were found.", itemsLeft.size());
-
-                if (! differences.isEmpty())
-                    differences.forEach(diff -> diff.keySet().forEach(key -> {
-                        log.info("Old value: {}", key);
-                        log.info("New value: {}", diff.get(key));
-                    }));
-                else log.info("No difference was found!");
-            }
         }
     }
 
