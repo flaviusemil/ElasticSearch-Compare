@@ -5,19 +5,20 @@ import com.swisscom.allegro.escomparison.ImporterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static com.swisscom.allegro.escomparison.Config.*;
+
 @Component
-public class CustomerCompareTest extends CompareTest {
+public class InventoryCompareTest extends CompareTest {
 
     @Autowired
     ImporterService importerService;
 
-    public CustomerCompareTest() {
-        this.name = "Customer Importer Test";
+    public InventoryCompareTest() {
+        this.name = "Inventory Importer Test";
     }
 
     @Override
     public void exec() {
-        System.out.println("Testing customer importer...");
-        importerService.importIndex();
+        importerService.importIndex(importerService.indexOrigItems, OLD_IAAS_INDEX_NAME, INVENTORY_SORT_BY, IMPORT_TYPE_INVENTORY, 10L);
     }
 }
