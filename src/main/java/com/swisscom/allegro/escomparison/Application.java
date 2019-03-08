@@ -1,8 +1,6 @@
 package com.swisscom.allegro.escomparison;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.swisscom.allegro.escomparison.options.BillSpecCompareTest;
 import com.swisscom.allegro.escomparison.options.CustomerCompareTest;
 import com.swisscom.allegro.escomparison.options.QpiCompareTest;
@@ -38,6 +36,7 @@ import static com.swisscom.allegro.escomparison.Config.*;
 @SpringBootApplication
 public class Application {
 
+    public static final long MAX_VALUES_TO_COMPARE = 10L;
     private static List<CompareTest> tests = new ArrayList<>();
     private static Scanner in = new Scanner(System.in);
 
@@ -210,6 +209,14 @@ public class Application {
         json.getAsJsonObject().remove(fieldName);
     }
 
+    private static void removeJsonFieldCharacs(JsonElement json) {
+        final JsonObject jsonObject = json.getAsJsonObject();
+        jsonObject.remove("characs");
+        JsonArray array = jsonObject.getAsJsonArray("child");
+        for (Iterator<JsonElement> it = array.iterator(); it.hasNext(); )
+            removeJsonFieldCharacs(it.next().getAsJsonObject());
+    }
+
     private static void handleExceptions(JsonElement el1, JsonElement el2) {
 //        removeJsonField(el1, "soiChLab");
 //        removeJsonField(el2, "soiChLab");
@@ -219,6 +226,13 @@ public class Application {
 //
 //        removeJsonField(el1, "soiChOrId");
 //        removeJsonField(el2, "soiChOrId");
+
+//        removeJsonField(el1, "child");
+//        removeJsonField(el2, "child");
+
+//        removeJsonFieldCharacs(el1);
+//        removeJsonFieldCharacs(el2);
+
     }
 
     private static boolean areJsonsSemanticallyIdentical(String o, String n) {
@@ -229,7 +243,19 @@ public class Application {
         handleExceptions(j1, j2);
 
         try {
-            JSONCompareResult result = JSONCompare.compareJSON(new Gson().toJson(j1), new Gson().toJson(j2), JSONCompareMode.LENIENT);
+            final String expectedStr = new Gson().toJson(j1);
+            final String actualStr = new Gson().toJson(j2);
+            JSONCompareResult result = JSONCompare.compareJSON(expectedStr, actualStr, JSONCompareMode.LENIENT);
+           if (result.failed()) {
+               log.debug("");
+               result.getFieldMissing().forEach(f -> log.error(f.getField() + " getExpected: " + f.getExpected() + " getActual:" + f.getActual()));
+               result.getFieldUnexpected().forEach(f -> log.error(f.getField() + " getExpected: " + f.getExpected() + " getActual:" + f.getActual()));
+               log.error("#The json objects are different: ");
+               log.debug("#Old version: {}", expectedStr);
+               log.debug("#New version: {}", actualStr);
+               log.debug("================================");
+
+           }
             return !result.failed();
         } catch (JSONException e) {
             log.error("Json compare failed: {}", e.getMessage());
@@ -250,9 +276,11 @@ public class Application {
             return true;
         }
 
-        log.error("The json objects are different!");
-        log.debug("Old version: {}", oldVersion);
-        log.debug("New version: {}", newVersion);
+//        log.debug("");
+//        log.error("The json objects are different: ");
+//        log.debug("Old version: {}", oldVersion);
+//        log.debug("New version: {}", newVersion);
+//        log.debug("================================");
 
         return false;
     }
@@ -276,7 +304,7 @@ public class Application {
 
     private static void importAndCompareSOIs() {//
 //        importIndex(indexOrigItems, OLD_IAAS_INDEX_NAME, SOI_SORT_BY, IMPORT_TYPE_SOI);
-        importIndex(indexOrigItems, OLD_IAAS_INDEX_NAME, INVENTORY_SORT_BY, IMPORT_TYPE_INVENTORY, 10L);
+        importIndex(indexOrigItems, OLD_IAAS_INDEX_NAME, INVENTORY_SORT_BY, IMPORT_TYPE_INVENTORY, MAX_VALUES_TO_COMPARE);
 //        importIndex(indexNewItems, "index_new_pbtaifun", SOI_SORT_BY, IMPORT_TYPE_SOI, 100L);
     }
 
