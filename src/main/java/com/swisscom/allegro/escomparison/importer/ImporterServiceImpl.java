@@ -1,6 +1,7 @@
-package com.swisscom.allegro.escomparison;
+package com.swisscom.allegro.escomparison.importer;
 
 import com.google.gson.Gson;
+import com.swisscom.allegro.escomparison.Importers;
 import com.swisscom.allegro.escomparison.client.ClientService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchResponse;
@@ -19,31 +20,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.swisscom.allegro.escomparison.Config.INVENTORY_IMPORT_API_URL;
 import static com.swisscom.allegro.escomparison.Config.REMOTE_CLUSTER_NAME;
 
 @Service
 @Slf4j
-public class ImporterService {
+class ImporterServiceImpl implements ImporterService {
 
     @Autowired
     private ClientService clientService;
 
     private TransportClient client;
     private static TransportClient compareClient;
-    public List<String> indexOrigItems = new ArrayList<>();
     protected List<String> indexNewItems = new ArrayList<>();
     private List<Importers> importers = new ArrayList<>();
 
+    @Override
     public void importIndex() {
         System.out.println("Running service...");
     }
 
+    @Override
     public void importIndex(List<String> s, String indexName, String sortBy, String type) {
         client = clientService.getLocalClient(REMOTE_CLUSTER_NAME);
         importIndex(s, indexName, sortBy, type, Long.MAX_VALUE);
     }
 
-    public void importIndex(List<String> s, String indexName, String sortBy, String type, Long maxValues) {
+    @Override
+    public List<String> importIndex(List<String> s, String indexName, String sortBy, String type, Long maxValues) {
 
         if (client == null)
             client = clientService.getLocalClient(REMOTE_CLUSTER_NAME);
@@ -71,7 +75,7 @@ public class ImporterService {
                     importers.add(new Gson().fromJson(hit.getSourceAsString(), Importers.class));
                     s.add(hit.getSourceAsString());
                     log.info("Importing item no: {}, id: {}", i++, importers.get(importers.size() - 1).getItemNo());
-                    getSoiFromLocalEnv(indexNewItems, "http://localhost:8090/inventory/import/CustomerOrderItem/", importers.get(importers.size() - 1).getItemNo());
+                    getSoiFromLocalEnv(indexNewItems, INVENTORY_IMPORT_API_URL, importers.get(importers.size() - 1).getItemNo());
 
                     if (index == maxValues)
                         break;

@@ -10,8 +10,10 @@ public class Config {
     static final boolean USE_LOCAL_ES = false;
     static final boolean SHOW_NON_SEMANTIC_WARNINGS = false;
 
-    protected static final String REMOTE_CLUSTER_NAME = "EL_Cluster_PBTAIFUN";
-    protected static final String REMOTE_HOST = "taifun-be-h42-1";
+    public static final int ELASTICSEARCH_PORT = 9300;
+
+    public static final String REMOTE_CLUSTER_NAME = "EL_Cluster_PBTAIFUN";
+    public static final String REMOTE_HOST = "taifun-be-h42-1";
 
     public static final String LOCAL_CLUSTER_NAME = "EL_Cluster_DEVEL2";
 
@@ -32,5 +34,5 @@ public class Config {
     static final String QPI_SORT_BY = "qpiNo";
     public static final String INVENTORY_SORT_BY = "itemNo";
 
-    public static final int ELASTICSEARCH_PORT = 9300;
+    public static final String INVENTORY_IMPORT_API_URL = "http://localhost:8090/inventory/import/CustomerOrderItem/";
 }

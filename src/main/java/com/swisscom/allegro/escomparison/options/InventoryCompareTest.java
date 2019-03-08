@@ -1,9 +1,13 @@
 package com.swisscom.allegro.escomparison.options;
 
+import com.google.gson.JsonElement;
 import com.swisscom.allegro.escomparison.CompareTest;
-import com.swisscom.allegro.escomparison.ImporterService;
+import com.swisscom.allegro.escomparison.importer.ImporterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.swisscom.allegro.escomparison.Config.*;
 
@@ -11,7 +15,9 @@ import static com.swisscom.allegro.escomparison.Config.*;
 public class InventoryCompareTest extends CompareTest {
 
     @Autowired
-    ImporterService importerService;
+    private ImporterService importerService;
+
+    private List<String> indexOrigItems = new ArrayList<>();
 
     public InventoryCompareTest() {
         this.name = "Inventory Importer Test";
@@ -19,6 +25,12 @@ public class InventoryCompareTest extends CompareTest {
 
     @Override
     public void exec() {
-        importerService.importIndex(importerService.indexOrigItems, OLD_IAAS_INDEX_NAME, INVENTORY_SORT_BY, IMPORT_TYPE_INVENTORY, 10L);
+        importerService.importIndex(indexOrigItems, OLD_IAAS_INDEX_NAME, INVENTORY_SORT_BY, IMPORT_TYPE_INVENTORY, 10L);
+
+    }
+
+    @Override
+    protected void handleExceptions(JsonElement el1, JsonElement el2) {
+
     }
 }

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-class Importers implements Serializable {
+public class Importers implements Serializable {
 
     private int custNo;
     private int cbsNo;
