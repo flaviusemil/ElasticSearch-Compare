@@ -14,5 +14,6 @@ class Importers implements Serializable {
     private int soiNo;
     private int qpiNo;
     private int itemNo;
+    private int prodNo;
 
 }

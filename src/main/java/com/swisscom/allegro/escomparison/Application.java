@@ -18,7 +18,9 @@ import org.json.JSONException;
 import org.skyscreamer.jsonassert.JSONCompare;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.JSONCompareResult;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -26,7 +28,9 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static com.swisscom.allegro.escomparison.Config.*;
@@ -96,13 +100,24 @@ public class Application {
     private static void importIndex(List<String> s, String indexName, String sortBy, String type, Long maxValues) {
         log.debug("Importing from {}...", indexName);
 
-        i = 0;
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        final int availableProcessors = Runtime.getRuntime().availableProcessors();
+        executor.setMaxPoolSize(Math.max(availableProcessors * 2, 16));
+        executor.setQueueCapacity(availableProcessors * 2);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
 
+        hasBeenChecked = true;
+        Application.i = 0;
+        AtomicLong counter = new AtomicLong(0);
+        List<String> failedCompareResults = new ArrayList<>();
         if (client != null) {
             SearchResponse scrollResp = client.prepareSearch(indexName)
                     .setQuery(QueryBuilders.termQuery("_type", type))
                     .addSort(sortBy, SortOrder.ASC)
-//                    .setQuery(QueryBuilders.termQuery(sortBy, 2056))
+//                    .setQuery(QueryBuilders.termQuery("itemNo", 1826123))
+//                    .setQuery(QueryBuilders.termQuery("_id", 12913240))
+                    .setFrom(6500000)
                     .setScroll(new TimeValue(5, TimeUnit.MINUTES))
                     .setSize(100)
                     .execute()
@@ -113,13 +128,12 @@ public class Application {
             do {
                 for (SearchHit hit : scrollResp.getHits().getHits()) {
                     index++;
+                    counter.incrementAndGet();
+//                    if (counter.get() > 300000) {
+                        compareInThread(executor, failedCompareResults, hit.getSourceAsString(), counter.get());
+//                    }
 
-                    importers.add(new Gson().fromJson(hit.getSourceAsString(), Importers.class));
-                    s.add(hit.getSourceAsString());
-                    log.info("Importing item no: {}, id: {}", i++, importers.get(importers.size() - 1).getItemNo());
-                    getSoiFromLocalEnv(indexNewItems, "http://localhost:8090/inventory/import/CustomerOrderItem/", importers.get(importers.size() - 1).getItemNo());
-
-                    if (index == maxValues)
+                    if (counter.get() == maxValues)
                         break;
                 }
 
@@ -129,6 +143,40 @@ public class Application {
             client.close();
 
         } else log.error("Cannot import, client is null!");
+
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.shutdown();
+
+        log.error("Failed: ");
+        failedCompareResults.forEach(System.out::println);
+    }
+
+    private static void compareInThread(ThreadPoolTaskExecutor executorService, List<String> failedCompareResults, String sourceAsString, long count) {
+        executorService.execute(() -> {
+
+            final Importers row = new Gson().fromJson(sourceAsString, Importers.class);
+
+            final int prodNo = row.getProdNo();
+            try {
+//                    if (row.getProdNo() != 1715019)
+//                        continue;
+
+                log.info("Importing item no: {}, id: {}", count, prodNo);
+                String newJson = getFromLocalEnv("http://localhost:8090/inventory/import/Product/", prodNo);
+
+                boolean result = areJsonsSemanticallyIdentical(sourceAsString, newJson);
+                if (result) {
+                    log.info("The json objects are semantically identical for item no (count): " + count + "; for prod no: " + prodNo);
+                } else {
+                    failedCompareResults.add(String.valueOf(prodNo));
+                }
+
+                log.error("Failed: " + String.join("; ", failedCompareResults));
+            } catch (Exception e) {
+                log.error("Compare failed for item no (count): " + count + "; for prod no: " + prodNo, e);
+            }
+
+        });
     }
 
     private static void perfromSearchAndCompareHit(SearchHit origHit) {
@@ -205,6 +253,25 @@ public class Application {
             else s.add(json);
     }
 
+    private static String getFromLocalEnv(String url, Integer soiNo) {
+        try {
+            String json = readJsonFromUrl(url + soiNo);
+
+            if (json == null)
+                return null;
+
+            if (json.substring(0, 1).equals("["))
+                return json.substring(1, json.length() - 1);
+            else
+                return json;
+
+        } catch (IOException e) {
+            log.error("Invalid url: {}", e.getMessage());
+        }
+
+       return null;
+    }
+
     private static void removeJsonField(JsonElement json, String fieldName) {
         json.getAsJsonObject().remove(fieldName);
     }
@@ -247,9 +314,13 @@ public class Application {
             final String actualStr = new Gson().toJson(j2);
             JSONCompareResult result = JSONCompare.compareJSON(expectedStr, actualStr, JSONCompareMode.LENIENT);
            if (result.failed()) {
-               log.debug("");
+               log.error("getFieldMissing");
                result.getFieldMissing().forEach(f -> log.error(f.getField() + " getExpected: " + f.getExpected() + " getActual:" + f.getActual()));
+               log.error("getFieldUnexpected");
                result.getFieldUnexpected().forEach(f -> log.error(f.getField() + " getExpected: " + f.getExpected() + " getActual:" + f.getActual()));
+               log.error("getFieldFailures");
+               result.getFieldFailures().forEach(f -> log.error(f.getField() + " getExpected: " + f.getExpected() + " getActual:" + f.getActual()));
+
                log.error("#The json objects are different: ");
                log.debug("#Old version: {}", expectedStr);
                log.debug("#New version: {}", actualStr);
