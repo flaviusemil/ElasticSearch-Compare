@@ -20,6 +20,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.JSONCompareResult;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.annotation.PostConstruct;
@@ -37,6 +38,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @SpringBootApplication
 public class Application {
+
+	private static ConfigurableApplicationContext context;
 
 	private static List<CompareTest> tests = new ArrayList<>();
 	private static Scanner in = new Scanner(System.in);
@@ -134,7 +137,8 @@ public class Application {
 		executor.setWaitForTasksToCompleteOnShutdown(true);
 		executor.shutdown();
 
-		log.error("Failed: ");
+		if (!failedCompareResults.isEmpty())
+			log.error("Failed: ");
 		failedCompareResults.forEach(System.out::println);
 	}
 
@@ -145,9 +149,6 @@ public class Application {
 
 			final int prodNo = row.getProdNo();
 			try {
-//                    if (row.getProdNo() != 1715019)
-//                        continue;
-
 				log.info("Importing item no: {}, id: {}", count, prodNo);
 				String newJson = getFromLocalEnv("http://localhost:8090/inventory/import/Product/", prodNo);
 
@@ -158,11 +159,13 @@ public class Application {
 					failedCompareResults.add(String.valueOf(prodNo));
 				}
 
-				log.error("Failed: " + String.join("; ", failedCompareResults));
+				if (!failedCompareResults.isEmpty())
+					log.error("Failed: " + String.join("; ", failedCompareResults));
 			} catch (Exception e) {
 				log.error("Compare failed for item no (count): " + count + "; for prod no: " + prodNo, e);
 			}
 
+//			context.close();
 		});
 	}
 
@@ -283,7 +286,7 @@ public class Application {
 	}
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		context = SpringApplication.run(Application.class, args);
 	}
 
 	private static void showWelcomeMessage() {
@@ -405,7 +408,7 @@ public class Application {
 
 	private void importAndCompareSOIs() {//
 //        importIndex(indexOrigItems, remoteOldIndexName, config.soiSortBy, config.importTypeSoi);
-		importIndex(indexOrigItems, config.remoteOldIndexName, config.inventorySortBy, config.importTypeInventory, config.MAX_VALUES_TO_COMPARE);
+		importIndex(indexOrigItems, config.remoteOldIndexName, config.inventorySortBy, config.importTypeInventory, config.maxValuesToCompare);
 //        importIndex(indexNewItems, "index_new_pbtaifun", config.soiSortBy, config.importTypeSoi, 100L);
 	}
 
@@ -434,6 +437,7 @@ public class Application {
 //            importAndCompareCustomers();
 			System.out.println("Remote cluster: " + config.remoteClusterName);
 			System.out.println("Remote host: " + config.remoteHost);
+			System.out.println("Max records to compare: " + config.maxValuesToCompare);
 
 			importAndCompareSOIs();
 		}

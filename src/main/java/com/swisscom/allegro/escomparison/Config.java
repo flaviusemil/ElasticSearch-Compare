@@ -15,7 +15,7 @@ class Config {
     public boolean showNonSemanticWarnings;
 
     @Value("${application.maxValuesToCompare}")
-    public long MAX_VALUES_TO_COMPARE;
+    public long maxValuesToCompare;
 
 
     @Value("${local.elasticsearch.cluster.name}")
