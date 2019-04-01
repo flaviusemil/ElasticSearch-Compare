@@ -1,0 +1,36 @@
+application:
+  useLocalES: false
+  showNonSemanticWarnings: false
+  maxValuesToCompare: 2
+
+local:
+  elasticsearch:
+    cluster:
+      name: "EL_Cluster_DEVEL2"
+      oldIndexName: "index_al_doc01"
+      newIndexName: "index_new_al_doc01"
+
+remote:
+  host: "taifun-be-h42-1"
+  elasticsearch:
+    cluster:
+      name: "EL_Cluster_PBTAIFUN"
+      oldIndexName: "index_pbtaifun"
+      newIndexName: "index_new_pbtaifun"
+
+importers:
+  soi:
+    type: "service_order_item"
+    sortBy: "soiNo"
+  customer:
+    type: "customer"
+    sortBy: "custNo"
+  qpi:
+    type: "quoted_product"
+    sortBy: "qpiNo"
+  billSpec:
+    type: "customer_bill_spec"
+    sortBy: "cbsNo"
+  inventory:
+    type: "inventory"
+    sortBy: "itemNo"

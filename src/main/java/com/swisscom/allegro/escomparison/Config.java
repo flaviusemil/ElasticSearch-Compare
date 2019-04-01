@@ -1,31 +1,73 @@
 package com.swisscom.allegro.escomparison;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
 class Config {
 
     private Config() {}
 
-    static final boolean USE_LOCAL_ES = false;
-    static final boolean SHOW_NON_SEMANTIC_WARNINGS = false;
+    @Value("${application.useLocalES}")
+    public boolean useLocalES;
 
-    static final String REMOTE_CLUSTER_NAME = "EL_Cluster_PBTAIFUN";
-    static final String REMOTE_HOST = "taifun-be-h42-1";
+    @Value("${application.showNonSemanticWarnings}")
+    public boolean showNonSemanticWarnings;
 
-    static final String LOCAL_CLUSTER_NAME = "EL_Cluster_DEVEL2";
+    @Value("${application.maxValuesToCompare}")
+    public long MAX_VALUES_TO_COMPARE;
 
-    static final String OLD_INDEX_NAME = "index_al_doc01";
-    static final String NEW_INDEX_NAME = "index_new_al_doc01";
 
-    static final String OLD_IAAS_INDEX_NAME = "index_pbtaifun";
+    @Value("${local.elasticsearch.cluster.name}")
+    public String localClusterName;
 
-    static final String IMPORT_TYPE_SOI = "service_order_item";
-    static final String IMPORT_TYPE_CUSTOMER = "customer";
-    static final String IMPORT_TYPE_BILL_SPEC = "customer_bill_spec";
-    static final String IMPORT_TYPE_QPI = "quoted_product";
-    static final String IMPORT_TYPE_INVENTORY = "inventory";
+    @Value("${local.elasticsearch.cluster.oldIndexName}")
+    public String localOldIndexName;
 
-    static final String CUSTOMER_SORT_BY = "custNo";
-    static final String SOI_SORT_BY = "soiNo";
-    static final String BILL_SPEC_SORT_BY = "cbsNo";
-    static final String QPI_SORT_BY = "qpiNo";
-    static final String INVENTORY_SORT_BY = "itemNo";
+    @Value("${local.elasticsearch.cluster.newIndexName}")
+    public String localNewIndexName;
+
+
+    @Value("${remote.host}")
+    public String remoteHost;
+
+    @Value("${remote.elasticsearch.cluster.name}")
+    public String remoteClusterName;
+
+    @Value("${remote.elasticsearch.cluster.oldIndexName}")
+    public String remoteOldIndexName;
+
+    @Value("${remote.elasticsearch.cluster.newIndexName}")
+    public String remoteNewIndexName;
+
+
+    @Value("${importers.soi.type}")
+    public String importTypeSoi;
+
+    @Value("${importers.customer.type}")
+    public String importTypeCustomer;
+
+    @Value("${importers.qpi.type}")
+    public String importTypeQpi;
+
+    @Value("${importers.billSpec.type}")
+    public String importTypeBillSpec;
+
+    @Value("${importers.inventory.type}")
+    public String importTypeInventory;
+
+    @Value("${importers.soi.sortBy}")
+    public String soiSortBy;
+
+    @Value("${importers.customer.sortBy}")
+    public String customerSortBy;
+
+    @Value("${importers.qpi.sortBy}")
+    public String qpiSortBy;
+
+    @Value("${importers.billSpec.sortBy}")
+    public String billSpecSortBy;
+
+    @Value("${importers.inventory.sortBy}")
+    public String inventorySortBy;
 }
