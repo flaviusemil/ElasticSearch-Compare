@@ -2,6 +2,8 @@ application:
   useLocalES: false
   showNonSemanticWarnings: false
 
+  port: 8090
+
   # If is set to 0 it will compare all the values.
   maxValuesToCompare: 10
 

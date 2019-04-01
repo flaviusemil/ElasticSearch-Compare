@@ -14,6 +14,9 @@ class Config {
     @Value("${application.showNonSemanticWarnings}")
     public boolean showNonSemanticWarnings;
 
+    @Value("${application.port}")
+    public int port;
+
     @Value("${application.maxValuesToCompare}")
     public long maxValuesToCompare;
 

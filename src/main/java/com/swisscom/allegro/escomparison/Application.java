@@ -85,11 +85,11 @@ public class Application {
 				.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host), 9300));
 	}
 
-	private static void importIndex(List<String> s, String indexName, String sortBy, String type) {
+	private void importIndex(List<String> s, String indexName, String sortBy, String type) {
 		importIndex(s, indexName, sortBy, type, Long.MAX_VALUE);
 	}
 
-	private static void importIndex(List<String> s, String indexName, String sortBy, String type, Long maxValues) {
+	private void importIndex(List<String> s, String indexName, String sortBy, String type, Long maxValues) {
 		log.debug("Importing from {}...", indexName);
 
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -142,15 +142,16 @@ public class Application {
 		failedCompareResults.forEach(System.out::println);
 	}
 
-	private static void compareInThread(ThreadPoolTaskExecutor executorService, List<String> failedCompareResults, String sourceAsString, long count) {
+	private void compareInThread(ThreadPoolTaskExecutor executorService, List<String> failedCompareResults, String sourceAsString, long count) {
 		executorService.execute(() -> {
 
 			final Importers row = new Gson().fromJson(sourceAsString, Importers.class);
 
 			final int prodNo = row.getProdNo();
 			try {
-				log.info("Importing item no: {}, id: {}", count, prodNo);
-				String newJson = getFromLocalEnv("http://localhost:8090/inventory/import/Product/", prodNo);
+				String url = "http://localhost:" + config.port + "/inventory/import/Product/";
+				log.info("Importing item no: {}, id: {} from {}", count, prodNo, url + prodNo);
+				String newJson = getFromLocalEnv(url, prodNo);
 
 				boolean result = areJsonsSemanticallyIdentical(sourceAsString, newJson);
 				if (result) {
