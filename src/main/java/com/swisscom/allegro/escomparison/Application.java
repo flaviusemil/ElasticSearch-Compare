@@ -118,16 +118,14 @@ public class Application {
 				for (SearchHit hit : scrollResp.getHits().getHits()) {
 					index++;
 					counter.incrementAndGet();
-//                    if (counter.get() > 300000) {
 					compareInThread(executor, failedCompareResults, hit.getSourceAsString(), counter.get());
-//                    }
 
-					if (counter.get() == maxValues)
+					if (maxValues != 0 && counter.get() == maxValues)
 						break;
 				}
 
 				scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(5, TimeUnit.MINUTES)).execute().actionGet();
-			} while (index < maxValues && scrollResp.getHits().getHits().length != 0);
+			} while ((maxValues == 0 || index < maxValues) && scrollResp.getHits().getHits().length != 0);
 
 			client.close();
 

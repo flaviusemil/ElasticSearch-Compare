@@ -1,6 +1,8 @@
 application:
   useLocalES: false
   showNonSemanticWarnings: false
+
+  # If is set to 0 it will compare all the values.
   maxValuesToCompare: 2
 
 local:
